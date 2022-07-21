@@ -1,5 +1,5 @@
 # QuaNISC: Quantifier Negation Identification using SpaCy
-QuaNISC was written for Ambilab, a research team part of the Language Science department at the University of California Irvine.
+QuaNISC was written for Ambilab, a research team part of the Language Science department at the University of California: Irvine.
 Using spaCy, QuaNISC identifies potential quantifier-negation statements from corpora transcripts.
 
 ## Installation

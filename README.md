@@ -22,7 +22,7 @@ Please install the following dependencies using your package manager of choice:
 
 `-c` or `--cuda` (optional): Using this arguement will enable CUDA GPU acceleration. Only use if your system has an NVIDIA GPU.
 
-'python QuaNISC.py -r [input_file_path]' will search your file for quantifier negations that include 'every, some, no'.
+`python QuaNISC.py -r [input_file_path]` will search your file for quantifier negations that include 'every, some, no'.
 
 ### Input File Format
 **CSV**

@@ -19,7 +19,8 @@ def get_quantifier(sentence, quantifiers):
     for token in doc:
         for quantifier in quantifiers:
             if (quantifier in token.text.lower()) and (token.dep_ in dep):
-                return token
+                if token.text != 'know':
+                    return token
     return None
 
 
@@ -89,13 +90,32 @@ def find_quantifier_negation(sentences, quantifiers):
     print('INFO: Beginning search for quantifier + negation statements.')
     ret = []
     bar = IncrementalBar('Searching...', max=len(sentences))
+    i = 0
+    indices = []
     for sentence in sentences:
+
         if is_quantifier_negation(sentence, quantifiers):
             ret.append(sentence)
+            indices.append(i)
         bar.next()
+        i = i+1
     bar.finish()
     print('INFO: Search completed with ' + str(len(ret)) + ' potential quantifier + negations.')
     print("\n")
+    return ret, indices
+
+def get_context(sentences, indices):
+    ret = []
+    for index in indices:
+        start = index - 3
+        end = index + 2
+        if start <= 0:
+            start = 0
+        elif end > len(sentences):
+            end = len(sentences)
+        for i in range(start, end):
+            ret.append(sentences[i])
+        ret.append('**********')
     return ret
 
 
@@ -109,12 +129,33 @@ def read_csv(csv):
     print('INFO: Successfully imported ' + str(len(sentences)) + ' sentences from ' + csv + '.')
     return sentences
 
+def read_txt(txt):
+    print('INFO: Reading ' + txt + '.')
+    read_obj = open(txt, 'r')
+    lines = read_obj.read().splitlines()
+    sentences = []
+    for line in lines:
+        if line != '':
+            sentences.append(line)
 
-def write_csv(sentences):
-    print('INFO: Writing potential quantifier + negation statements to output.csv.')
-    with open('output', 'w+', newline='') as write_obj:
+    print('INFO: Successfully imported ' + str(len(sentences)) + ' sentences from ' + txt + '.')
+
+    return sentences
+
+
+
+
+def write_csv(content, context):
+    if context:
+        print('INFO: Writing potential quantifier + negation statements with context to output_context.csv.')
+        file_name = 'output_context'
+    else:
+        print('INFO: Writing potential quantifier + negation statements to output.csv.')
+        file_name = 'output'
+    with open(file_name, 'w+', newline='') as write_obj:
         csv_writer = writer(write_obj)
-        csv_writer.writerows([sentence] for sentence in sentences)
+        csv_writer.writerows([line] for line in content)
+
 
 def banner():
     print("  ____              _   _ _____  _____  _____ ")
@@ -130,7 +171,9 @@ def banner():
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="QUAntifier Negation Identification Using SpaCy v1.0")
     parser.add_argument('-r', '--read', type=str, nargs=1, metavar='file_name', default=None,
-                        help='Specify the CSV file to read.')
+                        help='Specify the file to read.')
+    parser.add_argument('-f', '--format', type=str, nargs=1, metavar='file_format', default=None,
+                        help='Specify the file format.')
     parser.add_argument('-q', '--quantifier', type=str, nargs=1, metavar='quantifier', default=None,
                         help='Specify the quantifier to search for.')
     parser.add_argument('-c', '--cuda', action='store_true', default=False,
@@ -150,20 +193,37 @@ if __name__ == '__main__':
         print('**QuaNISC Terminated**')
         quit()
 
+    if args.format is None:
+        print('ERROR: Please specify the file format (csv or txt).')
+        print('**QuaNISC Terminated**')
+        quit()
+
     if args.cuda:
         spacy.prefer_gpu()
         print('INFO: CUDA GPU Acceleration initialized successfully.')
 
-    sentences = read_csv(args.read[0])
+    if args.format[0] == 'csv':
+        sentences = read_csv(args.read[0])
+    elif args.format[0] == 'txt':
+        sentences = read_txt(args.read[0])
+    else:
+        print('ERROR: Please specify file format as either csv or txt.')
+        print('**QuaNISC Terminated**')
+        quit()
+
 
     if args.quantifier is not None:
         quantifiers = [args.quantifier[0]]
-        print('Identifying potential "' + args.quantifier[0] + '" + negation statements in ' + args.read[0])
+        print('Identifying potential "' + args.quantifier[0] + '" + negation statements.')
     else:
         quantifiers = ['every', 'some', 'no']
-        print('Identifying all potential quantifier + negation statements in ' + args.read[0])
+        print('Identifying all potential quantifier + negation statements.')
     print("\n")
-    identifications = find_quantifier_negation(sentences, quantifiers)
-    write_csv(identifications)
+    identifications, indices = find_quantifier_negation(sentences, quantifiers)
+    context = get_context(sentences, indices)
+
+
+    write_csv(identifications, False)
+    write_csv(context, True)
 
     print('**QuaNISC Terminated**')
